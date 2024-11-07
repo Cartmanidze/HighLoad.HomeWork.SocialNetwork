@@ -1,0 +1,108 @@
+# Общие файлы, которые нужно игнорировать для проектов на .NET
+
+# Сборки и временные файлы
+bin/
+obj/
+[Bb]uild[Ll]og.*
+_ReSharper.*
+*.cache
+*.rsuser
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Конфигурационные файлы среды разработки Rider
+.idea/
+*.sln.iml
+
+# Файлы пакетов NuGet
+*.nupkg
+# Папка с установленными пакетами, если используется пакетная конфигурация NuGet
+packages/
+# Файлы блокировки пакетов
+packages.lock.json
+
+# Логи и отладочные файлы
+*.log
+logs/
+*.vspscc
+*.vssscc
+
+# Файлы публикации
+.publish/
+publish/
+
+# Файлы настройки IIS
+iisExpress/
+.vs/
+
+# Файлы настройки для инструментов
+*.DotSettings.user
+*.DotSettings
+
+# Файлы кэша и временные файлы
+[Tt]humbs.db
+*.DS_Store
+*.ncrunch*
+.*.sw?
+*.bak
+*.orig
+*.tmp
+*.temp
+*.old
+*.backup
+
+# Конфигурационные файлы, содержащие чувствительные данные
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+
+# Файлы пакетных менеджеров (если используются)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Файлы тестирования
+TestResults/
+*.TestResults/
+
+# Файлы отчетов и покрытие кода
+*.coverage
+*.coveragexml
+coverage.*.xml
+*.opencover.xml
+*.cobertura.xml
+lcov.info
+
+# Файлы кэширования и сервисные файлы операционных систем
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+*.directory
+
+# Файлы настроек Docker (если используются)
+**/[Dd]ocker-compose.*
+**/[Dd]ockerfile*
+
+# Файлы настройки редакторов и IDE
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Папки и файлы, связанные с работой Git
+*.orig
+*.rej
+
+# Если используете Entity Framework и не хотите хранить миграции
+Migrations/
+
+# Файлы настройки для Cake Build
+tools/
+Addins/
+Modules/
