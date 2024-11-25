@@ -4,11 +4,17 @@ namespace HighLoad.HomeWork.SocialNetwork.Interfaces;
 
 public interface IUserService
 {
-    Task<User?> GetUserByEmailAsync(string email);
+    Task<User?> GetByEmailAsync(string email);
     
-    Task<bool> UserExistsAsync(string email);
+    Task<bool> ExistsAsync(string email);
     
-    Task<User?> GetUserByIdAsync(Guid id);
+    Task<User?> GetByIdAsync(Guid id);
     
-    Task SaveUserAsync(User user);
+    Task SaveAsync(User user);
+    
+    Task<IReadOnlyCollection<User>> SearchAsync(string firstName, string lastName);
+
+    Task BulkInsertAsync(IEnumerable<User> users);
+
+    Task<IReadOnlyCollection<string>> GetAllEmailsAsync();
 }

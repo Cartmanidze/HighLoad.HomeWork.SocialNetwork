@@ -1,71 +1,65 @@
 using HighLoad.HomeWork.SocialNetwork.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.Models;
-using HighLoad.HomeWork.SocialNetwork.Requests;
+using HighLoad.HomeWork.SocialNetwork.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HighLoad.HomeWork.SocialNetwork.Controllers;
 
 [ApiController]
-[Route("[controller]")]
-public class UserController(IUserService userService, IPasswordHasher passwordHasher) : ControllerBase
+[Route("users")]
+public class UserController(IUserService userService) : ControllerBase
 {
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        if (await userService.UserExistsAsync(request.Email))
-        {
-            return BadRequest("User already exists");
-        }
-
-        var passwordHash = passwordHasher.HashPassword(request.Password);
-
-        var user = new User
-        {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            DateOfBirth = request.DateOfBirth,
-            Gender = request.Gender,
-            Interests = request.Interests,
-            City = request.City,
-            Email = request.Email,
-            PasswordHash = passwordHash
-            // Id будет сгенерирован в SaveUserAsync, если он равен Guid.Empty
-        };
-
-        await userService.SaveUserAsync(user);
-
-        return Ok("User registered successfully");
-    }
-
     [Authorize]
-    [HttpGet("get/{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetUser(Guid id)
     {
-        var user = await userService.GetUserByIdAsync(id);
+        var user = await userService.GetByIdAsync(id);
 
         if (user == null)
         {
             return NotFound("User not found");
         }
 
-        var userProfile = new
-        {
-            user.Id,
-            user.FirstName,
-            user.LastName,
-            user.DateOfBirth,
-            user.Gender,
-            user.Interests,
-            user.City,
-            user.Email
-        };
+        var userProfile = MapUser(user);
 
         return Ok(userProfile);
+    }
+    
+    [Authorize]
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchUsers([FromQuery] string firstName, [FromQuery] string lastName)
+    {
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+        {
+            return BadRequest("Both firstName and lastName parameters are required.");
+        }
+
+        var users = await userService.SearchAsync(firstName, lastName);
+
+        if (!users.Any())
+        {
+            return NotFound("No users found matching the criteria.");
+        }
+
+        var userProfiles = users.Select(MapUser);
+
+        return Ok(userProfiles);
+    }
+
+    private static UserResponse MapUser(User user)
+    {
+        var userProfile = new UserResponse
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            DateOfBirth = user.DateOfBirth,
+            Gender = user.Gender,
+            Interests = user.Interests,
+            City = user.City,
+            Email = user.Email
+        };
+        return userProfile;
     }
 }
