@@ -6,13 +6,11 @@ namespace HighLoad.HomeWork.SocialNetwork.Services;
 
 internal sealed class UserService(IConfiguration configuration) : IUserService
 {
-    private readonly string _connectionString = configuration.GetConnectionString("DefaultConnection")!;
-    
+    private readonly NpgsqlDataSource _dataSource = NpgsqlDataSource.Create(configuration.GetConnectionString("DefaultConnection")!);
+
     public async Task<User?> GetByEmailAsync(string email)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        
-        await connection.OpenAsync();
+        await using var connection = await _dataSource.OpenConnectionAsync();
 
         const string query = "SELECT * FROM Users WHERE Email = @Email";
 
@@ -38,8 +36,7 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
+        await using var connection = await _dataSource.OpenConnectionAsync();
 
         const string query = "SELECT * FROM Users WHERE Id = @Id";
 
@@ -58,8 +55,7 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
     public async Task SaveAsync(User user)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
+        await using var connection = await _dataSource.OpenConnectionAsync();
 
         const string query = @"INSERT INTO Users 
                          (FirstName, LastName, DateOfBirth, Gender, Interests, City, Email, PasswordHash)
@@ -87,22 +83,23 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
         await command.ExecuteNonQueryAsync();
     }
-
+    
     public async Task<IReadOnlyCollection<User>> SearchAsync(string firstName, string lastName)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
+        await using var connection = await _dataSource.OpenConnectionAsync();
 
         const string query = @"
         SELECT * 
         FROM Users 
-        WHERE FirstName ILIKE @FirstNamePattern AND LastName ILIKE @LastNamePattern";
+        WHERE (firstname || ' ' || lastname) ILIKE @FullNamePattern
+        ORDER BY Id";
 
         var users = new List<User>();
+        
+        var fullNamePattern = $"{firstName} {lastName}";
 
         await using var command = new NpgsqlCommand(query, connection);
-        command.Parameters.AddWithValue("@FirstNamePattern", $"%{firstName}%");
-        command.Parameters.AddWithValue("@LastNamePattern", $"%{lastName}%");
+        command.Parameters.AddWithValue("@FullNamePattern", $"%{fullNamePattern}%");
 
         await using var reader = await command.ExecuteReaderAsync();
 
@@ -116,8 +113,7 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
     public async Task BulkInsertAsync(IEnumerable<User> users)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
+        await using var connection = await _dataSource.OpenConnectionAsync();
         
         await using var writer = await connection.BeginBinaryImportAsync(
             @"COPY Users (FirstName, LastName, DateOfBirth, Gender, Interests, City, Email, PasswordHash) 
@@ -143,8 +139,7 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
     {
         var emails = new List<string>();
 
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
+        await using var connection = await _dataSource.OpenConnectionAsync();
 
         const string query = "SELECT Email FROM Users";
 
@@ -172,4 +167,5 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
             Email = reader.GetString(reader.GetOrdinal("Email")),
             PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash"))
         };
+
 }

@@ -47,8 +47,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Регистрация пользовательских сервисов
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 
 // Настройка аутентификации с использованием JWT Bearer
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
