@@ -1,16 +1,16 @@
+using HighLoad.HomeWork.SocialNetwork.Data;
 using HighLoad.HomeWork.SocialNetwork.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.Models;
 using Npgsql;
 
 namespace HighLoad.HomeWork.SocialNetwork.Services;
 
-internal sealed class UserService(IConfiguration configuration) : IUserService
+internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUserService
 {
-    private readonly NpgsqlDataSource _dataSource = NpgsqlDataSource.Create(configuration.GetConnectionString("DefaultConnection")!);
-
     public async Task<User?> GetByEmailAsync(string email)
     {
-        await using var connection = await _dataSource.OpenConnectionAsync();
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
 
         const string query = "SELECT * FROM Users WHERE Email = @Email";
 
@@ -36,7 +36,8 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
-        await using var connection = await _dataSource.OpenConnectionAsync();
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
 
         const string query = "SELECT * FROM Users WHERE Id = @Id";
 
@@ -55,7 +56,8 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
     public async Task SaveAsync(User user)
     {
-        await using var connection = await _dataSource.OpenConnectionAsync();
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
 
         const string query = @"INSERT INTO Users 
                          (FirstName, LastName, DateOfBirth, Gender, Interests, City, Email, PasswordHash)
@@ -86,7 +88,8 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
     
     public async Task<IReadOnlyCollection<User>> SearchAsync(string firstName, string lastName)
     {
-        await using var connection = await _dataSource.OpenConnectionAsync();
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
 
         const string query = @"
         SELECT * 
@@ -113,7 +116,8 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
 
     public async Task BulkInsertAsync(IEnumerable<User> users)
     {
-        await using var connection = await _dataSource.OpenConnectionAsync();
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
         
         await using var writer = await connection.BeginBinaryImportAsync(
             @"COPY Users (FirstName, LastName, DateOfBirth, Gender, Interests, City, Email, PasswordHash) 
@@ -139,7 +143,8 @@ internal sealed class UserService(IConfiguration configuration) : IUserService
     {
         var emails = new List<string>();
 
-        await using var connection = await _dataSource.OpenConnectionAsync();
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
 
         const string query = "SELECT Email FROM Users";
 

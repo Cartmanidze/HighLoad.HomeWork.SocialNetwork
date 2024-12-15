@@ -11,7 +11,7 @@ namespace HighLoad.HomeWork.SocialNetwork.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var isReadOnly = string.Equals(context.Request.Method, "GET", System.StringComparison.OrdinalIgnoreCase);
+            var isReadOnly = string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase);
 
             context.Items["IsReadOnly"] = isReadOnly;
 

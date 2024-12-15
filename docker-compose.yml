@@ -1,0 +1,164 @@
+﻿version: '3.9'
+
+networks:
+  backend:
+  k6:
+
+services:
+  # Prometheus для метрик
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    command:
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - k6
+    ports:
+      - "9090:9090"
+
+  # Grafana для дашбордов
+  grafana:
+    image: grafana/grafana:10.1.2
+    depends_on:
+      - prometheus
+    networks:
+      - k6
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_BASIC_ENABLED=false
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/
+
+  # PostgreSQL мастер
+  master-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: socialnetwork
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data/master:/var/lib/postgresql/data
+      - ./initdb-master:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cервис для инициализации слотов репликации
+  init-slots:
+    image: postgres:15
+    depends_on:
+      master-db:
+        condition: service_healthy
+    networks:
+      - backend
+    # Ждём, пока мастер будет доступен, и создаём слоты
+    command: >
+      bash -c "
+      until pg_isready -h master-db -U postgres; do sleep 1; done &&
+      psql -h master-db -U postgres -c \"SELECT pg_create_physical_replication_slot('slave1');\" &&
+      psql -h master-db -U postgres -c \"SELECT pg_create_physical_replication_slot('slave2');\"
+      "
+
+  # PostgreSQL slave1
+  slave1-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    depends_on:
+      master-db:
+        condition: service_healthy
+      init-slots:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    volumes:
+      - ./postgres-data/slave1:/var/lib/postgresql/data
+    command: >
+      bash -c "
+      chown -R postgres:postgres /var/lib/postgresql/data &&
+      chmod 700 /var/lib/postgresql/data &&
+      gosu postgres bash -c '
+         rm -rf /var/lib/postgresql/data/* &&
+         pg_basebackup -h master-db -D /var/lib/postgresql/data -U postgres -Fp -Xs -P -R &&
+         echo \"primary_slot_name = 'slave1'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+         chmod 700 /var/lib/postgresql/data &&
+         exec postgres
+      '
+      "
+
+  # PostgreSQL slave2
+  slave2-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    depends_on:
+      master-db:
+        condition: service_healthy
+      init-slots:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    volumes:
+      - ./postgres-data/slave2:/var/lib/postgresql/data
+    command: >
+      bash -c "
+      chown -R postgres:postgres /var/lib/postgresql/data &&
+      chmod 700 /var/lib/postgresql/data &&
+      gosu postgres bash -c '
+      rm -rf /var/lib/postgresql/data/* &&
+      pg_basebackup -h master-db -D /var/lib/postgresql/data -U postgres -Fp -Xs -P -R &&
+      echo \"primary_slot_name = 'slave2'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      chmod 700 /var/lib/postgresql/data &&
+      exec postgres
+      '
+      "
+
+  # Ваше приложение с репликацией
+  highload.homework.socialnetwork:
+    build:
+      context: .
+      dockerfile: HighLoad.HomeWork.SocialNetwork/Dockerfile
+    image: highload.homework.socialnetwork
+    depends_on:
+      - master-db
+      - slave1-db
+      - slave2-db
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      Slaves__0: "Host=slave1-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      Slaves__1: "Host=slave2-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      Jwt__Issuer: "http://localhost"
+      Jwt__Audience: "http://localhost"
+      Jwt__Key: "yoursecretkeyyoursecretkey"
+    networks:
+      - backend
+      - k6
+    ports:
+      - "8080:8080"
+
+  # K6 для нагрузочного тестирования
+  k6:
+    image: grafana/k6:0.45.0
+    networks:
+      - k6
+    command: "k6 version"
+    volumes:
+      - ./k6-scripts:/scripts

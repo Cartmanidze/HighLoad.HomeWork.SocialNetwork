@@ -7,29 +7,41 @@ namespace HighLoad.HomeWork.SocialNetwork.Data;
 
 public class ReplicationRoutingDataSource : IDbConnectionFactory
 {
-    private readonly string _masterConnectionString;
-    private readonly List<string> _slaveConnectionStrings;
+    private readonly NpgsqlDataSource _masterDataSource;
+    private readonly List<NpgsqlDataSource> _slaveDataSources;
     private readonly ITransactionState _transactionState;
-    
+
     private int _lastSlaveIndex = -1;
 
     public ReplicationRoutingDataSource(IOptions<DbReplicationOptions> options, ITransactionState transactionState)
     {
-        _masterConnectionString = options.Value.Master;
-        _slaveConnectionStrings = new List<string>(options.Value.Slaves);
         _transactionState = transactionState;
+            
+        _masterDataSource = NpgsqlDataSource.Create(options.Value.Master);
+            
+        _slaveDataSources = new List<NpgsqlDataSource>(options.Value.Slaves.Length);
+        foreach (var slaveConnString in options.Value.Slaves)
+        {
+            var slaveDataSource = NpgsqlDataSource.Create(slaveConnString);
+            _slaveDataSources.Add(slaveDataSource);
+        }
     }
 
-    public IDbConnection CreateConnection()
+    public async Task<IDbConnection> CreateConnectionAsync()
     {
         var isReadOnly = _transactionState.IsReadOnly;
-        if (isReadOnly && _slaveConnectionStrings.Count > 0)
+        if (isReadOnly && _slaveDataSources.Count > 0)
         {
             var nextIndex = Interlocked.Increment(ref _lastSlaveIndex);
-            var slave = _slaveConnectionStrings[nextIndex % _slaveConnectionStrings.Count];
-            return new NpgsqlConnection(slave);
+            var dataSource = _slaveDataSources[nextIndex % _slaveDataSources.Count];
+
+            var conn = dataSource.CreateConnection();
+            await conn.OpenAsync();
+            return conn;
         }
-        
-        return new NpgsqlConnection(_masterConnectionString);
+
+        var masterConn = _masterDataSource.CreateConnection();
+        await masterConn.OpenAsync();
+        return masterConn;
     }
 }

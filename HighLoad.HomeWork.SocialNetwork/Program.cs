@@ -12,10 +12,8 @@ using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Конфигурация JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-// Сервисы
 builder.Services.AddControllers();
 
 builder.Services.AddOpenTelemetry()
@@ -27,7 +25,6 @@ builder.Services.AddOpenTelemetry()
     });
 
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -54,17 +51,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Регистрация опций репликации
 builder.Services.Configure<DbReplicationOptions>(builder.Configuration.GetSection("Replication"));
 
-// Регистрация зависимостей
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-builder.Services.AddTransient<ITransactionState, HttpContextTransactionState>();
-builder.Services.AddTransient<IDbConnectionFactory, ReplicationRoutingDataSource>();
+builder.Services.AddScoped<ITransactionState, HttpContextTransactionState>();
+builder.Services.AddScoped<IDbConnectionFactory, ReplicationRoutingDataSource>();
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 
-// Настройка аутентификации JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -95,16 +89,14 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Middleware для определения read-only запросов
 app.UseMiddleware<ReadOnlyRoutingMiddleware>();
 
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Включаем сбор метрик HTTP запросов
 app.UseHttpMetrics();
 
 app.UseMetricServer();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
