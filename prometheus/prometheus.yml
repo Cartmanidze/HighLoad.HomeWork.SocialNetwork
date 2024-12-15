@@ -1,0 +1,4 @@
+scrape_configs:
+  - job_name: 'social_network_app'
+    static_configs:
+      - targets: ['highload.homework.socialnetwork:8080']
