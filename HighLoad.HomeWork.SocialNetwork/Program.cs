@@ -1,25 +1,37 @@
+using System.Text;
+using HighLoad.HomeWork.SocialNetwork.Data;
 using HighLoad.HomeWork.SocialNetwork.Interfaces;
+using HighLoad.HomeWork.SocialNetwork.Middlewares;
+using HighLoad.HomeWork.SocialNetwork.Options;
 using HighLoad.HomeWork.SocialNetwork.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text;
+using OpenTelemetry.Metrics;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Чтение конфигурации для JWT из appsettings.json
+// Конфигурация JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-// Добавление сервисов в контейнер
+// Сервисы
 builder.Services.AddControllers();
 
-// Добавление поддержки Swagger
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(mb =>
+    {
+        mb.AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddPrometheusExporter();
+    });
+
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Social Network API", Version = "v1" });
-
-    // Настройка JWT авторизации в Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -27,7 +39,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Введите 'Bearer' [пробел] и ваш токен JWT в поле ниже.\n\nПример: 'Bearer eyJhbGciOiJIUzI1NiIsIn...'"
+        Description = "Введите 'Bearer' [пробел] и ваш токен JWT."
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -35,25 +47,28 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference{ Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
 });
 
-// Регистрация пользовательских сервисов
+// Регистрация опций репликации
+builder.Services.Configure<DbReplicationOptions>(builder.Configuration.GetSection("Replication"));
+
+// Регистрация зависимостей
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddTransient<ITransactionState, HttpContextTransactionState>();
+builder.Services.AddTransient<IDbConnectionFactory, ReplicationRoutingDataSource>();
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 
-// Настройка аутентификации с использованием JWT Bearer
+// Настройка аутентификации JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -62,16 +77,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+            IssuerSigningKey = key
         };
     });
 
-// Добавление авторизации
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Включение Swagger только в режиме разработки
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -82,10 +95,19 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Конвейер обработки запросов
+// Middleware для определения read-only запросов
+app.UseMiddleware<ReadOnlyRoutingMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Включаем сбор метрик HTTP запросов
+app.UseHttpMetrics();
+
+app.UseMetricServer();
+
 app.MapControllers();
+
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();
