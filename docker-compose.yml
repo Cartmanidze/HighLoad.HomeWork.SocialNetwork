@@ -156,9 +156,9 @@ services:
       ConnectionStrings__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
       Slaves__0: "Host=slave1-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
       Slaves__1: "Host=slave2-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
-      Jwt__Issuer: "http://localhost"
-      Jwt__Audience: "http://localhost"
-      Jwt__Key: "yoursecretkeyyoursecretkey"
+      Jwt__Issuer: "SocialNetwork"
+      Jwt__Audience: "SocialNetworkUsers"
+      Jwt__Key: "aVeryLongAndSecureSecretKeyThatIsAtLeast32Chars"
     networks:
       - backend
       - k6
@@ -170,6 +170,5 @@ services:
     image: grafana/k6:0.45.0
     networks:
       - k6
-    command: "k6 version"
     volumes:
       - ./k6-scripts:/scripts

@@ -4,9 +4,9 @@ import { Counter, Trend } from 'k6/metrics';
 
 // Метрики
 export let successfulRequests = new Counter('successful_requests'); // Успешные запросы (статус 2xx)
-export let failedRequests = new Counter('failed_requests'); // Неуспешные запросы (все, кроме 2xx)
-export let slowRequests = new Counter('slow_requests'); // Запросы, превышающие 500 мс
-export let responseTime = new Trend('response_time', true); // Время выполнения запросов
+export let failedRequests = new Counter('failed_requests');         // Неуспешные запросы (все, кроме 2xx)
+export let slowRequests = new Counter('slow_requests');             // Запросы, превышающие 500 мс
+export let responseTime = new Trend('response_time', true);         // Время выполнения запросов
 
 // Настройка нагрузки
 export let options = {
@@ -22,8 +22,9 @@ export let options = {
 };
 
 // Тестовые данные
-const BASE_URL = 'http://localhost:5027';
+const BASE_URL = 'http://highload.homework.socialnetwork:8080';
 const LOGIN_ENDPOINT = `${BASE_URL}/auth/login`;
+const USER_GET_ENDPOINT = `${BASE_URL}/users/000074ac-8a22-450f-a836-d730cd8c2a00`;
 const SEARCH_ENDPOINT = `${BASE_URL}/users/search`;
 
 const LOGIN_CREDENTIALS = {
@@ -59,7 +60,7 @@ export default function () {
     const token = authenticateUser();
 
     if (!token) {
-        console.error('Token not received. Skipping the request to /users/search.');
+        console.error('Token not received. Skipping requests.');
         return;
     }
 
@@ -70,12 +71,20 @@ export default function () {
         },
     };
 
-    // Параметры поиска
+    // Сначала запрос к /users/{id}
+    let res = http.get(USER_GET_ENDPOINT, params);
+    handleResponse(res);
+
+    // Затем запрос к /users/search
     const queryParams = `?firstName=Al&lastName=Jo`;
+    res = http.get(`${SEARCH_ENDPOINT}${queryParams}`, params);
+    handleResponse(res);
 
-    // Отправка запроса на поиск пользователей
-    const res = http.get(`${SEARCH_ENDPOINT}${queryParams}`, params);
+    sleep(1); // Задержка между итерациями
+}
 
+// Функция для обработки ответа и метрик
+function handleResponse(res) {
     // Сохраняем время выполнения запроса
     responseTime.add(res.timings.duration);
 
@@ -90,6 +99,4 @@ export default function () {
     if (res.timings.duration > 500) {
         slowRequests.add(1);
     }
-
-    sleep(1); // Задержка между запросами
 }
