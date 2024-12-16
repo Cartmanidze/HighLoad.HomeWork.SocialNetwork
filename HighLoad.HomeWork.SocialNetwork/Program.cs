@@ -54,8 +54,8 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.Configure<DbReplicationOptions>(builder.Configuration.GetSection("Replication"));
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-builder.Services.AddScoped<ITransactionState, HttpContextTransactionState>();
-builder.Services.AddScoped<IDbConnectionFactory, ReplicationRoutingDataSource>();
+builder.Services.AddTransient<ITransactionState, HttpContextTransactionState>();
+builder.Services.AddTransient<IDbConnectionFactory, ReplicationRoutingDataSource>();
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 

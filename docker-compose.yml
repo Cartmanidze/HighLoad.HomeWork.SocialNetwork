@@ -68,8 +68,18 @@ services:
     command: >
       bash -c "
       until pg_isready -h master-db -U postgres; do sleep 1; done &&
-      psql -h master-db -U postgres -c \"SELECT pg_create_physical_replication_slot('slave1');\" &&
-      psql -h master-db -U postgres -c \"SELECT pg_create_physical_replication_slot('slave2');\"
+
+      if ! psql -h master-db -U postgres -tAc \"SELECT 1 FROM pg_replication_slots WHERE slot_name='slave1'\" | grep -q 1; then
+        psql -h master-db -U postgres -c \"SELECT pg_create_physical_replication_slot('slave1');\"
+      else
+        echo 'Slot slave1 already exists, skipping creation.'
+      fi &&
+
+      if ! psql -h master-db -U postgres -tAc \"SELECT 1 FROM pg_replication_slots WHERE slot_name='slave2'\" | grep -q 1; then
+        psql -h master-db -U postgres -c \"SELECT pg_create_physical_replication_slot('slave2');\"
+      else
+        echo 'Slot slave2 already exists, skipping creation.'
+      fi
       "
 
   # PostgreSQL slave1
