@@ -12,7 +12,7 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         var conn = await connectionFactory.CreateConnectionAsync();
         await using var connection = (NpgsqlConnection)conn;
 
-        const string query = "SELECT * FROM Users WHERE Email = @Email";
+        const string query = @"SELECT * FROM ""Users"" WHERE ""Email"" = @Email";
 
         await using var command = new NpgsqlCommand(query, connection);
         command.Parameters.AddWithValue("@Email", email);
@@ -39,7 +39,7 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         var conn = await connectionFactory.CreateConnectionAsync();
         await using var connection = (NpgsqlConnection)conn;
 
-        const string query = "SELECT * FROM Users WHERE Id = @Id";
+        const string query = @"SELECT * FROM ""Users"" WHERE ""Id"" = @Id";
 
         await using var command = new NpgsqlCommand(query, connection);
         command.Parameters.AddWithValue("@Id", id);
@@ -59,9 +59,10 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         var conn = await connectionFactory.CreateConnectionAsync();
         await using var connection = (NpgsqlConnection)conn;
 
-        const string query = @"INSERT INTO Users 
-                         (FirstName, LastName, DateOfBirth, Gender, Interests, City, Email, PasswordHash)
-                         VALUES (@FirstName, @LastName, @DateOfBirth, @Gender, @Interests, @City, @Email, @PasswordHash)";
+        const string query = @"
+            INSERT INTO ""Users"" 
+            (""FirstName"", ""LastName"", ""DateOfBirth"", ""Gender"", ""Interests"", ""City"", ""Email"", ""PasswordHash"")
+            VALUES (@FirstName, @LastName, @DateOfBirth, @Gender, @Interests, @City, @Email, @PasswordHash)";
 
         await using var command = new NpgsqlCommand(query, connection);
         command.Parameters.AddWithValue("@FirstName", user.FirstName);
@@ -73,14 +74,21 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         {
             command.Parameters.AddWithValue("@Interests", user.Interests!);
         }
+        else
+        {
+            command.Parameters.AddWithValue("@Interests", DBNull.Value);
+        }
 
         if (user.City != null)
         {
             command.Parameters.AddWithValue("@City", user.City);
         }
+        else
+        {
+            command.Parameters.AddWithValue("@City", DBNull.Value);
+        }
         
         command.Parameters.AddWithValue("@Email", user.Email);
-        
         command.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
 
         await command.ExecuteNonQueryAsync();
@@ -92,10 +100,10 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         await using var connection = (NpgsqlConnection)conn;
 
         const string query = @"
-        SELECT * 
-        FROM Users 
-        WHERE (firstname || ' ' || lastname) ILIKE @FullNamePattern
-        ORDER BY Id";
+            SELECT * 
+            FROM ""Users"" 
+            WHERE (""FirstName"" || ' ' || ""LastName"") ILIKE @FullNamePattern
+            ORDER BY ""Id""";
 
         var users = new List<User>();
         
@@ -120,8 +128,8 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         await using var connection = (NpgsqlConnection)conn;
         
         await using var writer = await connection.BeginBinaryImportAsync(
-            @"COPY Users (FirstName, LastName, DateOfBirth, Gender, Interests, City, Email, PasswordHash) 
-          FROM STDIN (FORMAT BINARY)");
+            @"COPY ""Users"" (""FirstName"", ""LastName"", ""DateOfBirth"", ""Gender"", ""Interests"", ""City"", ""Email"", ""PasswordHash"") 
+              FROM STDIN (FORMAT BINARY)");
 
         foreach (var user in users)
         {
@@ -146,7 +154,7 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
         var conn = await connectionFactory.CreateConnectionAsync();
         await using var connection = (NpgsqlConnection)conn;
 
-        const string query = "SELECT Email FROM Users";
+        const string query = @"SELECT ""Email"" FROM ""Users""";
 
         await using var command = new NpgsqlCommand(query, connection);
         await using var reader = await command.ExecuteReaderAsync();
@@ -172,5 +180,4 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
             Email = reader.GetString(reader.GetOrdinal("Email")),
             PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash"))
         };
-
 }

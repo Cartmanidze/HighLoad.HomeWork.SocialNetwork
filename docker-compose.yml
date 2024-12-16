@@ -151,6 +151,7 @@ services:
       - slave1-db
       - slave2-db
     environment:
+      ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
       Slaves__0: "Host=slave1-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
