@@ -17,13 +17,12 @@ var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddControllers();
 
 builder.Services.AddOpenTelemetry()
-    .WithMetrics(mb =>
-    {
-        mb.AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddPrometheusExporter();
-    });
-
+    .WithMetrics(b => b
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddProcessInstrumentation()
+        .AddPrometheusExporter());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
