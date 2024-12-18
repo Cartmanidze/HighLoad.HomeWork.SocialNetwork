@@ -96,6 +96,8 @@ services:
         condition: service_completed_successfully
     networks:
       - backend
+    ports:
+      - "5433:5432"
     volumes:
       - ./postgres-data/slave1:/var/lib/postgresql/data
     command: >
@@ -125,6 +127,8 @@ services:
         condition: service_completed_successfully
     networks:
       - backend
+    ports:
+      - "5434:5432"
     volumes:
       - ./postgres-data/slave2:/var/lib/postgresql/data
     command: >
@@ -153,9 +157,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
-      Slaves__0: "Host=slave1-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
-      Slaves__1: "Host=slave2-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      ConnectionStringsDatabases__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      ConnectionStringsDatabases__Slaves__0: "Host=slave1-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      ConnectionStringsDatabases__Slaves__1: "Host=slave2-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
       Jwt__Issuer: "SocialNetwork"
       Jwt__Audience: "SocialNetworkUsers"
       Jwt__Key: "aVeryLongAndSecureSecretKeyThatIsAtLeast32Chars"
