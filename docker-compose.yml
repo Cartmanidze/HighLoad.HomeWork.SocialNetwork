@@ -33,7 +33,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_BASIC_ENABLED=false
     volumes:
-      - ./grafana:/etc/grafana/provisioning/
+      - ./grafana/provisioning:/etc/grafana/provisioning
 
   # PostgreSQL мастер
   master-db:
