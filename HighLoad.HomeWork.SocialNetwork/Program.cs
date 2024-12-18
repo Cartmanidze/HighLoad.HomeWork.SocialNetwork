@@ -50,7 +50,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.Configure<DbReplicationOptions>(builder.Configuration.GetSection("Replication"));
+builder.Services.Configure<DbReplicationOptions>(builder.Configuration.GetSection("ConnectionStringsDatabases"));
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddTransient<ITransactionState, HttpContextTransactionState>();

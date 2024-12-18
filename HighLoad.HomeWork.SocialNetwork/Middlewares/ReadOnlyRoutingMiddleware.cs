@@ -1,21 +1,20 @@
-namespace HighLoad.HomeWork.SocialNetwork.Middlewares
+namespace HighLoad.HomeWork.SocialNetwork.Middlewares;
+
+public class ReadOnlyRoutingMiddleware
 {
-    public class ReadOnlyRoutingMiddleware
+    private readonly RequestDelegate _next;
+
+    public ReadOnlyRoutingMiddleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
+        _next = next;
+    }
 
-        public ReadOnlyRoutingMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
+    public async Task InvokeAsync(HttpContext context)
+    {
+        var isReadOnly = string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase);
 
-        public async Task InvokeAsync(HttpContext context)
-        {
-            var isReadOnly = string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase);
+        context.Items["IsReadOnly"] = isReadOnly;
 
-            context.Items["IsReadOnly"] = isReadOnly;
-
-            await _next(context);
-        }
+        await _next(context);
     }
 }

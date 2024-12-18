@@ -1,27 +1,26 @@
-namespace HighLoad.HomeWork.SocialNetwork.Data
+namespace HighLoad.HomeWork.SocialNetwork.Data;
+
+public class HttpContextTransactionState : ITransactionState
 {
-    public class HttpContextTransactionState : ITransactionState
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public HttpContextTransactionState(IHttpContextAccessor httpContextAccessor)
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        _httpContextAccessor = httpContextAccessor;
+    }
 
-        public HttpContextTransactionState(IHttpContextAccessor httpContextAccessor)
+    public bool IsReadOnly
+    {
+        get
         {
-            _httpContextAccessor = httpContextAccessor;
-        }
+            var context = _httpContextAccessor.HttpContext;
+            if (context == null) return false;
 
-        public bool IsReadOnly
-        {
-            get
+            if (context.Items.TryGetValue("IsReadOnly", out var value) && value is bool b)
             {
-                var context = _httpContextAccessor.HttpContext;
-                if (context == null) return false;
-
-                if (context.Items.TryGetValue("IsReadOnly", out var value) && value is bool b)
-                {
-                    return b;
-                }
-                return false;
+                return b;
             }
+            return false;
         }
     }
 }
