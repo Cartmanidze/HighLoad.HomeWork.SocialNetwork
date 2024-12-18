@@ -144,7 +144,7 @@ services:
       '
       "
 
-  # Ваше приложение с репликацией
+  # Приложение
   highload.homework.socialnetwork:
     build:
       context: .
