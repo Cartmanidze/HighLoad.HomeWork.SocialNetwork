@@ -2,13 +2,11 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 
-// Метрики
 export let successfulRequests = new Counter('successful_requests'); // Успешные запросы (статус 2xx)
 export let failedRequests = new Counter('failed_requests');         // Неуспешные запросы (все, кроме 2xx)
 export let slowRequests = new Counter('slow_requests');             // Запросы, превышающие 500 мс
 export let responseTime = new Trend('response_time', true);         // Время выполнения запросов
 
-// Настройка нагрузки
 export let options = {
     stages: [
         { duration: '30s', target: 1 },    // 1 пользователь
