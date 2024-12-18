@@ -27,7 +27,7 @@ export default function () {
     const url = `${GENERATE_USERS_ENDPOINT}?count=${COUNT}`;
     const res = http.post(url, null);
     handleResponse(res);
-    sleep(0.5);
+    sleep(1);
 }
 
 function handleResponse(res) {
