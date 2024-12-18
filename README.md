@@ -76,3 +76,72 @@ docker compose down
 Это остановит и удалит контейнеры, но сохранит данные в томах (`./postgres-data`), если вы захотите сохранить состояние базы.
 
 Если хотите полностью очистить данные, удалите или очистите соответствующие директории с данными вручную.
+
+# Документация по запросам к API
+
+## Аутентификация
+
+### POST `/auth/login`
+Позволяет аутентифицировать пользователя. При успешной аутентификации возвращает JWT-токен, который необходимо использовать в заголовке `Authorization: Bearer <token>` при дальнейших запросах.
+
+Пример запроса:
+```bash
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"SuperSecurePassword"}'
+```
+
+### POST `/auth/register`
+Регистрация нового пользователя. Ожидает данные о пользователе (например, email и пароль) и создаёт запись в базе данных.
+
+Пример запроса:
+```bash
+curl -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+  "firstName": "string",
+  "lastName": "string",
+  "dateOfBirth": "2024-12-18T05:41:24.965Z",
+  "gender": "string",
+  "interests": "string",
+  "city": "string",
+  "email": "string",
+  "password": "string"
+}'
+```
+
+### POST `/auth/generate-users`
+Генерирует тестовых пользователей. Принимает параметр `count` (целое число), определяющий, сколько пользователей будет сгенерировано.
+
+Параметры:
+- `count`: целое число (query parameter), количество пользователей для генерации.
+
+Пример запроса:
+```bash
+curl -X POST "http://localhost:8080/auth/generate-users?count=10"
+```
+
+## Пользователи
+
+### GET `/users/{id}`
+Возвращает информацию о пользователе с указанным идентификатором (UUID или иной уникальный идентификатор).
+
+Пример запроса:
+```bash
+curl -X GET http://localhost:8080/users/000074ac-8a22-450f-a836-d730cd8c2a00 \
+  -H "Authorization: Bearer <token>"
+```
+
+### GET `/users/search`
+Позволяет искать пользователей по определённым критериям, например по имени и фамилии.
+
+Пример запроса:
+```bash
+curl -X GET "http://localhost:8080/users/search?firstName=Al&lastName=Jo" \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+Все запросы к защищённым ресурсам (например, получение списка пользователей или поиск) требуют наличия заголовка `Authorization` с корректным JWT-токеном, полученным после успешного входа через `/auth/login`.
+```
