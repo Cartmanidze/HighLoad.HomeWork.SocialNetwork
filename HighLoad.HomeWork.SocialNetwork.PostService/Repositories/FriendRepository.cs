@@ -3,16 +3,11 @@ using Npgsql;
 
 namespace HighLoad.HomeWork.SocialNetwork.PostService.Repositories;
 
-internal sealed class FriendRepository : IFriendRepository
+internal sealed class FriendRepository(IConfiguration configuration) : IFriendRepository
 {
-    private readonly string _connectionString;
+    private readonly string _connectionString = configuration.GetConnectionString("PostServiceDb")
+                                                ?? throw new InvalidOperationException("PostServiceDb connection string is missing.");
 
-    public FriendRepository(IConfiguration configuration)
-    {
-        _connectionString = configuration.GetConnectionString("PostServiceDb")
-                            ?? throw new InvalidOperationException("PostServiceDb connection string is missing.");
-    }
-    
     public async Task AddAsync(Guid userId, Guid friendId)
     {
         const string sql = @"

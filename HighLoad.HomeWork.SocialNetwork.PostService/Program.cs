@@ -14,7 +14,7 @@ builder.Services.AddScoped<IFriendRepository, FriendRepository>();
 builder.Services.AddScoped<IFriendService, FriendService>();
 builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
-builder.Services.AddSingleton<IFeedCacheService, FeedCacheService>();
+builder.Services.AddScoped<IFeedCacheService, FeedCacheService>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddControllers();

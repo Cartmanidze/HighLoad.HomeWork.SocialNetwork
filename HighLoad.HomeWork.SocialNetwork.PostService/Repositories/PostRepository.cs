@@ -4,16 +4,11 @@ using Npgsql;
 
 namespace HighLoad.HomeWork.SocialNetwork.PostService.Repositories;
 
-internal sealed class PostRepository : IPostRepository
+internal sealed class PostRepository(IConfiguration configuration) : IPostRepository
 {
-    private readonly string _connectionString;
-    
-    public PostRepository(IConfiguration configuration)
-    {
-        _connectionString = configuration.GetConnectionString("PostServiceDb")
-                            ?? throw new InvalidOperationException("PostServiceDb connection string is missing.");
-    }
-    
+    private readonly string _connectionString = configuration.GetConnectionString("PostServiceDb")
+                                                ?? throw new InvalidOperationException("PostServiceDb connection string is missing.");
+
     public async Task<Post?> GetAsync(Guid postId)
     {
         const string sql = @"
