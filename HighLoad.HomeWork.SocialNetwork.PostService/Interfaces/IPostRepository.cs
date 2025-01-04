@@ -8,4 +8,6 @@ public interface IPostRepository
     Task<Guid> CreateAsync(Post post);
     Task UpdateAsync(Post post);
     Task DeleteAsync(Guid postId);
+
+    Task<IReadOnlyCollection<Post>> GetPostsByAuthorsAsync(IEnumerable<Guid> authorIds, int limit);
 }

@@ -2,9 +2,9 @@ namespace HighLoad.HomeWork.SocialNetwork.PostService.Responses;
 
 public class PostResponse
 {
-    public Guid Id { get; set; }
-    public Guid AuthorId { get; set; }
-    public string Content { get; set; } = null!;
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public Guid Id { get; init; }
+    public Guid AuthorId { get; init; }
+    public string Content { get; init; } = null!;
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
 }

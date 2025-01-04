@@ -5,7 +5,7 @@ namespace HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
 
 public interface IPostService
 {
-    Task<PostResponse> GetAsync(Guid postId);
+    Task<PostResponse?> GetAsync(Guid postId);
     
     Task<Guid> CreateAsync(PostCreateRequest createRequest);
     

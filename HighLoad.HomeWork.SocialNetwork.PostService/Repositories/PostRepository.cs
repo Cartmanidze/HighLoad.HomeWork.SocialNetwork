@@ -104,4 +104,45 @@ internal sealed class PostRepository : IPostRepository
 
         await cmd.ExecuteNonQueryAsync();
     }
+
+    public async Task<IReadOnlyCollection<Post>> GetPostsByAuthorsAsync(IEnumerable<Guid> authorIds, int limit)
+    {
+        var authorsArray = authorIds.ToArray();
+        if (authorsArray.Length == 0)
+        {
+            return Array.Empty<Post>();
+        }
+
+        const string sql = @"
+            SELECT Id, AuthorId, Content, CreatedAt, UpdatedAt
+            FROM Posts
+            WHERE AuthorId = ANY(@Authors)
+            ORDER BY CreatedAt DESC
+            LIMIT @Limit
+        ";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@Authors", authorsArray);
+        cmd.Parameters.AddWithValue("@Limit", limit);
+
+        var posts = new List<Post>();
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var post = new Post
+            {
+                Id = reader.GetGuid(reader.GetOrdinal("Id")),
+                AuthorId = reader.GetGuid(reader.GetOrdinal("AuthorId")),
+                Content = reader.GetString(reader.GetOrdinal("Content")),
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
+                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("UpdatedAt"))
+            };
+            posts.Add(post);
+        }
+        return posts;
+    }
 }
