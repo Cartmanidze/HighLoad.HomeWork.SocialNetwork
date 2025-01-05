@@ -1,14 +1,13 @@
 using HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.PostService.Models;
+using HighLoad.HomeWork.SocialNetwork.PostService.Options;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace HighLoad.HomeWork.SocialNetwork.PostService.Repositories;
 
-internal sealed class PostRepository(IConfiguration configuration) : IPostRepository
+internal sealed class PostRepository(IOptions<DbOptions> options) : IPostRepository
 {
-    private readonly string _connectionString = configuration.GetConnectionString("PostServiceDb")
-                                                ?? throw new InvalidOperationException("PostServiceDb connection string is missing.");
-
     public async Task<Post?> GetAsync(Guid postId)
     {
         const string sql = @"
@@ -17,7 +16,7 @@ internal sealed class PostRepository(IConfiguration configuration) : IPostReposi
             WHERE Id = @Id
         ";
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -49,7 +48,7 @@ internal sealed class PostRepository(IConfiguration configuration) : IPostReposi
             VALUES (@Id, @AuthorId, @Content, @CreatedAt, @UpdatedAt)
         ";
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -76,7 +75,7 @@ internal sealed class PostRepository(IConfiguration configuration) : IPostReposi
             WHERE Id = @Id
         ";
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -91,7 +90,7 @@ internal sealed class PostRepository(IConfiguration configuration) : IPostReposi
     {
         const string sql = "DELETE FROM Posts WHERE Id = @Id";
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -116,7 +115,7 @@ internal sealed class PostRepository(IConfiguration configuration) : IPostReposi
             LIMIT @Limit
         ";
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);

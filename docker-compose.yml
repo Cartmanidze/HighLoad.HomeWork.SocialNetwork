@@ -176,3 +176,47 @@ services:
       - k6
     volumes:
       - ./k6-scripts:/scripts
+       
+  # БД для PostService
+  postdb:
+    image: postgres:15
+    container_name: postdb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postservice
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - backend
+    ports:
+      - "5435:5432"
+    volumes:
+      - ./postgres-data/postservice:/var/lib/postgresql/data
+      - ./initdb-posts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Сервис постов (PostService)
+  post-service:
+    build:
+      context: .
+      dockerfile: HighLoad.HomeWork.SocialNetwork.PostService/Dockerfile
+    image: highload.homework.socialnetwork.postservice
+    depends_on:
+      postdb:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStringsDatabases__PostServiceDb: "Host=postdb;Port=5432;Database=postservice;Username=postgres;Password=postgres"
+      Jwt__Issuer: "SocialNetwork"
+      Jwt__Audience: "SocialNetworkUsers"
+      Jwt__Key: "aVeryLongAndSecureSecretKeyThatIsAtLeast32Chars"
+      ServiceUrls__UserServiceUrl: "http://highload.homework.socialnetwork:8080"
+    networks:
+      - backend
+    ports:
+      - "8090:8080"

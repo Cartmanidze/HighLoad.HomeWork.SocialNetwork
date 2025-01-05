@@ -166,6 +166,32 @@ internal sealed class UserService(IDbConnectionFactory connectionFactory) : IUse
 
         return emails;
     }
+    
+    public async Task<IReadOnlyCollection<Guid>> GetUserIdsAsync(int limit)
+    {
+        var conn = await connectionFactory.CreateConnectionAsync();
+        await using var connection = (NpgsqlConnection)conn;
+
+        const string query = @"
+        SELECT ""Id""
+        FROM ""Users""
+        ORDER BY ""Id""
+        LIMIT @limit
+    ";
+
+        var userIds = new List<Guid>();
+
+        await using var command = new NpgsqlCommand(query, connection);
+        command.Parameters.AddWithValue("@limit", limit);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            userIds.Add(reader.GetGuid(0));
+        }
+
+        return userIds;
+    }
 
     private static User MapReaderToUser(NpgsqlDataReader reader) =>
         new()

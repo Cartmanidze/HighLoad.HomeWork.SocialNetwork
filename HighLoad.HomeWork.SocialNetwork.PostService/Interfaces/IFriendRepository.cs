@@ -7,4 +7,6 @@ public interface IFriendRepository
     Task DeleteAsync(Guid userId, Guid friendId);
     
     Task<IReadOnlyCollection<Guid>> GetFriendIdsAsync(Guid userId);
+
+    Task<IReadOnlyCollection<(Guid UserId, Guid FriendId)>> GetFriendsAsync(int limit);
 }

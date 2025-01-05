@@ -46,6 +46,20 @@ public class UserController(IUserService userService) : ControllerBase
 
         return Ok(userProfiles);
     }
+    
+    [Authorize]
+    [HttpGet("ids")]
+    public async Task<IActionResult> GetUserIds([FromQuery] int limit = 100)
+    {
+        if (limit <= 0)
+            return BadRequest("Limit must be a positive number.");
+
+        var ids = await userService.GetUserIdsAsync(limit);
+        if (ids.Count == 0)
+            return NotFound("No user ids found.");
+
+        return Ok(ids);
+    }
 
     private static UserResponse MapUser(User user)
     {

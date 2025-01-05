@@ -1,10 +1,13 @@
 using System.Text;
+using HighLoad.HomeWork.SocialNetwork.PostService.Clients;
 using HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
+using HighLoad.HomeWork.SocialNetwork.PostService.Options;
 using HighLoad.HomeWork.SocialNetwork.PostService.Repositories;
 using HighLoad.HomeWork.SocialNetwork.PostService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Refit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,25 @@ builder.Services.AddScoped<IFriendService, FriendService>();
 builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IFeedCacheService, FeedCacheService>();
+
+var userServiceUrl = builder.Configuration["ServiceUrls:UserServiceUrl"];
+if (string.IsNullOrEmpty(userServiceUrl))
+{
+    throw new InvalidOperationException("UserServiceUrl is not configured in appsettings.json (ServiceUrls:UserServiceUrl).");
+}
+
+builder.Services.AddScoped<AuthHeaderHandler>();
+
+builder.Services.AddRefitClient<IUserClient>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri(userServiceUrl);
+    })
+    .AddHttpMessageHandler<AuthHeaderHandler>();
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.Configure<DbOptions>(builder.Configuration.GetSection("ConnectionStringsDatabases"));
 
 builder.Services.AddMemoryCache();
 builder.Services.AddControllers();

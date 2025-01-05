@@ -1,50 +1,45 @@
+using Bogus;
 using HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.PostService.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HighLoad.HomeWork.SocialNetwork.PostService.Controllers;
 
 [ApiController]
 [Route("posts")]
-public sealed class PostsController : ControllerBase
+[Authorize]
+public sealed class PostsController(IPostService postService, IFeedCacheService feedCacheService, IFriendRepository friendRepository)
+    : ControllerBase
 {
-    private readonly IPostService _postService;
-    private readonly IFeedCacheService _feedCacheService;
-
-    public PostsController(IPostService postService, IFeedCacheService feedCacheService)
-    {
-        _postService = postService;
-        _feedCacheService = feedCacheService;
-    }
-    
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetPost(Guid id)
     {
-        var post = await _postService.GetAsync(id);
+        var post = await postService.GetAsync(id);
         if (post == null) return NotFound();
         return Ok(post);
     }
 
-    [HttpPost("create")]
+    [HttpPost]
     public async Task<IActionResult> CreatePost([FromBody] PostCreateRequest createdRequest)
     {
-        var created = await _postService.CreateAsync(createdRequest);
+        var created = await postService.CreateAsync(createdRequest);
         
         return Ok(created);
     }
 
-    [HttpPut("update/{id:guid}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdatePost([FromBody] PostUpdateRequest updateRequest)
     {
-        await _postService.UpdateAsync(updateRequest);
+        await postService.UpdateAsync(updateRequest);
         
         return Ok();
     }
 
-    [HttpDelete("delete/{id:guid}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeletePost(Guid id)
     {
-        await _postService.DeleteAsync(id);
+        await postService.DeleteAsync(id);
         
         return Ok();
     }
@@ -52,14 +47,69 @@ public sealed class PostsController : ControllerBase
     [HttpGet("feed/{userId:guid}")]
     public async Task<IActionResult> GetFeed(Guid userId)
     {
-        var feed = await _feedCacheService.GetFeedAsync(userId);
+        var feed = await feedCacheService.GetFeedAsync(userId);
         return Ok(feed);
     }
     
     [HttpPost("feed/rebuild/{userId:guid}")]
     public async Task<IActionResult> RebuildFeed(Guid userId)
     {
-        await _feedCacheService.RebuildCacheAsync(userId);
+        await feedCacheService.RebuildCacheAsync(userId);
         return Ok("Feed cache rebuilt");
+    }
+    
+    [HttpPost("generate")]
+    public async Task<IActionResult> GeneratePosts(
+        [FromQuery] int totalPosts = 100,
+        [FromQuery] int maxPostsPerUser = 10)
+    {
+        if (totalPosts <= 0 || maxPostsPerUser <= 0)
+        {
+            return BadRequest("totalPosts and maxPostsPerUser must be positive.");
+        }
+
+        // 1. Получаем список userId. Предположим, вы хотите максимум 50_000 пользователей
+        var userIds = (await friendRepository.GetFriendsAsync(50_000)).ToArray();
+        if (userIds.Length == 0)
+        {
+            return BadRequest("No friends found - cannot generate posts.");
+        }
+
+        // 2. Готовим случайный генератор
+        var random = new Random();
+        var faker = new Faker(); // Bogus, для случайного контента
+
+        var createdCount = 0;
+
+        // 3. Создаём посты, пока не достигнем totalPosts
+        //    (Можно разбить на batch, если очень много)
+        while (createdCount < totalPosts)
+        {
+            // Выбираем случайного пользователя
+            var userIndex = random.Next(userIds.Length);
+            var authorId = userIds[userIndex].UserId;
+
+            // Генерируем 1..maxPostsPerUser постов для этого пользователя
+            // (или просто 1 в каждом цикле while — на ваше усмотрение)
+            int postsForThisUser = random.Next(1, maxPostsPerUser + 1);
+            for (int i = 0; i < postsForThisUser; i++)
+            {
+                if (createdCount >= totalPosts) break;
+                
+                var content = faker.Lorem.Sentence(10); // Случайный текст
+                var request = new PostCreateRequest
+                {
+                    AuthorId = authorId,
+                    Content = content
+                };
+                
+                // Создаём пост
+                await postService.CreateAsync(request);
+
+                createdCount++;
+            }
+        }
+
+        return Ok($"{createdCount} posts generated successfully");
     }
 }

@@ -1,13 +1,12 @@
 using HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
+using HighLoad.HomeWork.SocialNetwork.PostService.Options;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace HighLoad.HomeWork.SocialNetwork.PostService.Repositories;
 
-internal sealed class FriendRepository(IConfiguration configuration) : IFriendRepository
+internal sealed class FriendRepository(IOptions<DbOptions> options) : IFriendRepository
 {
-    private readonly string _connectionString = configuration.GetConnectionString("PostServiceDb")
-                                                ?? throw new InvalidOperationException("PostServiceDb connection string is missing.");
-
     public async Task AddAsync(Guid userId, Guid friendId)
     {
         const string sql = @"
@@ -18,7 +17,7 @@ internal sealed class FriendRepository(IConfiguration configuration) : IFriendRe
 
         var friendshipId = Guid.NewGuid();
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -37,7 +36,7 @@ internal sealed class FriendRepository(IConfiguration configuration) : IFriendRe
             WHERE UserId = @UserId AND FriendId = @FriendId
         ";
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -57,7 +56,7 @@ internal sealed class FriendRepository(IConfiguration configuration) : IFriendRe
 
         var friendIds = new List<Guid>();
 
-        await using var conn = new NpgsqlConnection(_connectionString);
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
         await conn.OpenAsync();
 
         await using var cmd = new NpgsqlCommand(sql, conn);
@@ -70,5 +69,36 @@ internal sealed class FriendRepository(IConfiguration configuration) : IFriendRe
         }
 
         return friendIds;
+    }
+    
+    public async Task<IReadOnlyCollection<(Guid UserId, Guid FriendId)>> GetFriendsAsync(int limit)
+    {
+        if (limit <= 0)
+            return Array.Empty<(Guid, Guid)>();
+
+        const string sql = @"
+        SELECT UserId, FriendId
+        FROM Friendships
+        ORDER BY UserId
+        LIMIT @Limit
+    ";
+
+        var pairs = new List<(Guid UserId, Guid FriendId)>();
+
+        await using var conn = new NpgsqlConnection(options.Value.PostServiceDb);
+        await conn.OpenAsync();
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@Limit", limit);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var uid = reader.GetGuid(reader.GetOrdinal("UserId"));
+            var fid = reader.GetGuid(reader.GetOrdinal("FriendId"));
+            pairs.Add((uid, fid));
+        }
+
+        return pairs;
     }
 }

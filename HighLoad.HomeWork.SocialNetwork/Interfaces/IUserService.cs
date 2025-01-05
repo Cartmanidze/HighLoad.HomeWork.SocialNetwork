@@ -17,4 +17,6 @@ public interface IUserService
     Task BulkInsertAsync(IEnumerable<User> users);
 
     Task<IReadOnlyCollection<string>> GetAllEmailsAsync();
+
+    Task<IReadOnlyCollection<Guid>> GetUserIdsAsync(int limit);
 }
