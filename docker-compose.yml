@@ -229,6 +229,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: citusdb
+      POSTGRES_HOST_AUTH_METHOD: trust
     networks:
       - backend
     ports:
@@ -250,6 +251,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: citusdb
+      POSTGRES_HOST_AUTH_METHOD: trust
     networks:
       - backend
     ports:
@@ -270,6 +272,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: citusdb
+      POSTGRES_HOST_AUTH_METHOD: trust
     networks:
       - backend
     ports:

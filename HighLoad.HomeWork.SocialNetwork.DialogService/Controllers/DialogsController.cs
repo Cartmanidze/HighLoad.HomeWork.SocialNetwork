@@ -1,3 +1,4 @@
+using HighLoad.HomeWork.SocialNetwork.DialogService.Extensions;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Requests;
 using Microsoft.AspNetCore.Mvc;
@@ -5,30 +6,46 @@ using Microsoft.AspNetCore.Mvc;
 namespace HighLoad.HomeWork.SocialNetwork.DialogService.Controllers;
 
 [ApiController]
-[Route("dialogs/{userId:guid}")]
+[Route("dialogs")]
 public class DialogsController(IDialogService dialogService) : ControllerBase
 {
     [HttpPost("send")]
-    public async Task<IActionResult> SendMessage(Guid userId, [FromBody] SendMessageRequest? request)
+    public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest? request)
     {
+        var userId = User.GetUserId();
+        
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+        
         if (request == null || request.SenderId == Guid.Empty || string.IsNullOrWhiteSpace(request.Text))
         {
             return BadRequest("Invalid request body.");
         }
 
-        await dialogService.SaveMessageAsync(request.SenderId, userId, request.Text);
+        await dialogService.SaveMessageAsync(request.SenderId, userId.Value, request.Text);
+        
         return Ok(new { status = "Message sent" });
     }
     
     [HttpGet("list")]
-    public async Task<IActionResult> GetDialog(Guid userId, [FromQuery] Guid other)
+    public async Task<IActionResult> GetDialog([FromQuery] Guid receiverId)
     {
-        if (other == Guid.Empty)
+        var userId = User.GetUserId();
+        
+        if (userId == null)
         {
-            return BadRequest("Missing or invalid 'other' userId.");
+            return Unauthorized();
         }
-
-        var messages = await dialogService.GetDialogAsync(userId, other);
+        
+        if (receiverId == Guid.Empty)
+        {
+            return BadRequest("Missing or invalid 'receiverId' userId.");
+        }
+        
+        var messages = await dialogService.GetDialogAsync(userId.Value, receiverId);
+        
         return Ok(messages);
     }
 }
