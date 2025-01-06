@@ -220,3 +220,86 @@ services:
       - backend
     ports:
       - "8090:8080"
+      
+  # Координатор Citus
+  citus-coordinator:
+    image: citusdata/citus:11.2
+    container_name: citus-coordinator
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: citusdb
+    networks:
+      - backend
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./data/coordinator:/var/lib/postgresql/data
+      - ./initdb-dialogs:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Воркер1
+  citus-worker1:
+    image: citusdata/citus:11.2
+    container_name: citus-worker1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: citusdb
+    networks:
+      - backend
+    ports:
+      - "5437:5432"
+    volumes:
+      - ./data/worker1:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Воркер2
+  citus-worker2:
+    image: citusdata/citus:11.2
+    container_name: citus-worker2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: citusdb
+    networks:
+      - backend
+    ports:
+      - "5438:5432"
+    volumes:
+      - ./data/worker2:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # DialogService
+  dialog-service:
+    build:
+      context: .
+      dockerfile: HighLoad.HomeWork.SocialNetwork.DialogService/Dockerfile
+    container_name: dialog-service
+    environment:
+      ConnectionStrings__CitusDb: "Host=citus-coordinator;Port=5432;Database=citusdb;Username=postgres;Password=postgres"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+    networks:
+      - backend
+    ports:
+      - "8100:8080"
+    depends_on:
+      citus-coordinator:
+        condition: service_healthy
+      citus-worker1:
+        condition: service_healthy
+      citus-worker2:
+        condition: service_healthy
