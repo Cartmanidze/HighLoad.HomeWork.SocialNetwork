@@ -234,6 +234,11 @@ services:
       - backend
     ports:
       - "5436:5432"
+    depends_on:
+      citus-worker1:
+        condition: service_healthy
+      citus-worker2:
+        condition: service_healthy
     volumes:
       - ./postgres-data/coordinator:/var/lib/postgresql/data
       - ./initdb-dialogs:/docker-entrypoint-initdb.d
