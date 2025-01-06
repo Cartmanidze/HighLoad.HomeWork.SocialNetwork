@@ -1,7 +1,7 @@
 
 using System.Text;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
-using HighLoad.HomeWork.SocialNetwork.DialogService.Repositories;
+using HighLoad.HomeWork.SocialNetwork.DialogService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;

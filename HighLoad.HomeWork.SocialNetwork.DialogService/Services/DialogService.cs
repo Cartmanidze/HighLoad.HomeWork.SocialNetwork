@@ -2,7 +2,7 @@ using HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Models;
 using Npgsql;
 
-namespace HighLoad.HomeWork.SocialNetwork.DialogService.Repositories;
+namespace HighLoad.HomeWork.SocialNetwork.DialogService.Services;
 
 internal sealed class DialogService(string citusConnectionString) : IDialogService
 {
