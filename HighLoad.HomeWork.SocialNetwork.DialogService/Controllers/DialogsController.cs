@@ -1,10 +1,12 @@
 using HighLoad.HomeWork.SocialNetwork.DialogService.Extensions;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HighLoad.HomeWork.SocialNetwork.DialogService.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("dialogs")]
 public class DialogsController(IDialogService dialogService) : ControllerBase
