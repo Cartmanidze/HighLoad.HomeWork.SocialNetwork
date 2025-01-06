@@ -235,7 +235,7 @@ services:
     ports:
       - "5436:5432"
     volumes:
-      - ./data/coordinator:/var/lib/postgresql/data
+      - ./postgres-data/coordinator:/var/lib/postgresql/data
       - ./initdb-dialogs:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
@@ -257,7 +257,7 @@ services:
     ports:
       - "5437:5432"
     volumes:
-      - ./data/worker1:/var/lib/postgresql/data
+      - ./postgres-data/worker1:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 5s
@@ -278,7 +278,7 @@ services:
     ports:
       - "5438:5432"
     volumes:
-      - ./data/worker2:/var/lib/postgresql/data
+      - ./postgres-data/worker2:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 5s
