@@ -230,7 +230,7 @@ curl -X GET "http://localhost:8080/users/search?firstName=Al&lastName=Jo" \
     - `POST /dialog/{userId}/send`: отправка сообщения;
     - `GET /dialog/{userId}/list?receiverId={receiverId}`: получить диалог
 
-Сервис использует инструмент Cirtus для шардирования
+Сервис использует инструмент Citus для шардирования
 
 ---
 
