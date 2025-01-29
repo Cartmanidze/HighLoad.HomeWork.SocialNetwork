@@ -6,7 +6,7 @@ namespace HighLoad.HomeWork.SocialNetwork.DialogService.Services;
 
 internal sealed class DialogService(string citusConnectionString) : IDialogService
 {
-    public async Task SaveMessageAsync(Guid senderId, Guid receiverId, string text)
+    public async Task SaveMessageAsync(Guid receiverId, Guid senderId, string text)
     {
         const string sql = @"
                 INSERT INTO messages (id, sender_id, receiver_id, text, created_at)

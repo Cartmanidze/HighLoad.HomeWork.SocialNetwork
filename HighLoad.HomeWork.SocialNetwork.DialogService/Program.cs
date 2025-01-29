@@ -5,16 +5,38 @@ using HighLoad.HomeWork.SocialNetwork.DialogService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using Prometheus;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var redisConnString = builder.Configuration.GetConnectionString("Redis");
+
+if (string.IsNullOrWhiteSpace(redisConnString))
+{
+    redisConnString = "localhost:6379";
+}
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
+//var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
 
-builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
+//builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
+
+builder.Services.AddSingleton<IDialogService, DialogServiceRedis>();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnString));
 
 builder.Services.AddControllers();
+
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(b => b
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddProcessInstrumentation()
+        .AddPrometheusExporter());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -74,6 +96,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHttpMetrics();
+
+app.UseMetricServer();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -4,7 +4,7 @@ namespace HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
 
 public interface IDialogService
 {
-    Task SaveMessageAsync(Guid senderId, Guid receiverId, string text);
+    Task SaveMessageAsync(Guid receiverId, Guid senderId, string text);
     
     Task<IReadOnlyCollection<Message>> GetDialogAsync(Guid userId, Guid otherUserId);
 }

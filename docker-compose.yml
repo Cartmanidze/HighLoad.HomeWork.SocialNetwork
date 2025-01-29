@@ -308,6 +308,7 @@ services:
     container_name: dialog-service
     environment:
       ConnectionStrings__CitusDb: "Host=citus-coordinator;Port=5432;Database=citusdb;Username=postgres;Password=postgres"
+      ConnectionStrings__Redis: "redis:6379"
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
     networks:
@@ -338,4 +339,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:7.0
+    container_name: redis
+    networks:
+      - backend
+    ports:
+      - "6380:6379"
 

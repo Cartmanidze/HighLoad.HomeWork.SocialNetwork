@@ -95,6 +95,7 @@ app.UseHttpMetrics();
 app.UseMetricServer();
 
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();

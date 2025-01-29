@@ -21,12 +21,12 @@ public class DialogsController(IDialogService dialogService) : ControllerBase
             return Unauthorized();
         }
         
-        if (request == null || request.SenderId == Guid.Empty || string.IsNullOrWhiteSpace(request.Text))
+        if (request == null || request.ReceiverId == Guid.Empty || string.IsNullOrWhiteSpace(request.Text))
         {
             return BadRequest("Invalid request body.");
         }
 
-        await dialogService.SaveMessageAsync(request.SenderId, userId.Value, request.Text);
+        await dialogService.SaveMessageAsync(request.ReceiverId, userId.Value, request.Text);
         
         return Ok(new { status = "Message sent" });
     }
