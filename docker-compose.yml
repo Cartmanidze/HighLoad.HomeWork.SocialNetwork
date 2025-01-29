@@ -311,3 +311,22 @@ services:
         condition: service_healthy
       citus-worker2:
         condition: service_healthy
+        
+        
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmq
+    ports:
+      - "5673:5672"     # порт для AMQP
+      - "15673:15672"   # порт для веб-интерфейса (http://localhost:15673)
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+

@@ -1,9 +1,11 @@
 using System.Text;
 using HighLoad.HomeWork.SocialNetwork.PostService.Clients;
 using HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
+using HighLoad.HomeWork.SocialNetwork.PostService.Middlewares;
 using HighLoad.HomeWork.SocialNetwork.PostService.Options;
 using HighLoad.HomeWork.SocialNetwork.PostService.Repositories;
 using HighLoad.HomeWork.SocialNetwork.PostService.Services;
+using HighLoad.HomeWork.SocialNetwork.PostService.Workers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -18,6 +20,10 @@ builder.Services.AddScoped<IFriendService, FriendService>();
 builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IFeedCacheService, FeedCacheService>();
+
+builder.Services.AddSingleton<IWebsocketConnectionManager, InMemoryWebsocketConnectionManager>();
+
+builder.Services.AddHostedService<WebsocketBroadcastBackgroundService>();
 
 var userServiceUrl = builder.Configuration["ServiceUrls:UserServiceUrl"];
 if (string.IsNullOrEmpty(userServiceUrl))
@@ -37,6 +43,10 @@ builder.Services.AddRefitClient<IUserClient>()
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.Configure<DbOptions>(builder.Configuration.GetSection("ConnectionStringsDatabases"));
+
+builder.Services.Configure<RabbitMqOptions>(
+    builder.Configuration.GetSection("RabbitMQ")
+);
 
 builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
@@ -103,6 +113,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseWebSockets();
+app.UseMiddleware<WebSocketMiddleware>();
 
 app.MapControllers();
 
