@@ -16,15 +16,15 @@ public class WebSocketMiddleware
     {
         if (context.Request.Path == "/post/feed/posted" && context.WebSockets.IsWebSocketRequest)
         {
-            var ws = await context.WebSockets.AcceptWebSocketAsync();
-
-            // Например, определяем userId из JWT
-            var userIdStr = context.User?.FindFirst("sub")?.Value;
+            
+            var userIdStr = context.User?.FindFirst("UserId")?.Value;
             if (!Guid.TryParse(userIdStr, out var userId))
             {
                 context.Response.StatusCode = 401;
                 return;
             }
+            
+            var ws = await context.WebSockets.AcceptWebSocketAsync();
 
             await wsManager.AddConnectionAsync(userId, ws);
             await WebSocketLoopAsync(ws, userId, wsManager);

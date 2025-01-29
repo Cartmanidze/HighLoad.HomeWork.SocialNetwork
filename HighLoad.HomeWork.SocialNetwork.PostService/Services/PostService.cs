@@ -1,3 +1,4 @@
+using HighLoad.HomeWork.SocialNetwork.PostService.Events;
 using HighLoad.HomeWork.SocialNetwork.PostService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.PostService.Models;
 using HighLoad.HomeWork.SocialNetwork.PostService.Requests;
@@ -8,7 +9,8 @@ namespace HighLoad.HomeWork.SocialNetwork.PostService.Services;
 internal sealed class PostService(
     IPostRepository postRepository,
     IFeedCacheService feedCacheService,
-    IFriendRepository friendRepository)
+    IFriendRepository friendRepository, 
+    IRabbitMqPublisher rabbitMqPublisher)
     : IPostService
 {
     public async Task<PostResponse?> GetAsync(Guid postId)
@@ -25,6 +27,15 @@ internal sealed class PostService(
         var created = await postRepository.CreateAsync(post);
         
         await InvalidateFriendsFeed(createRequest.AuthorId);
+        
+        var evt = new PostCreatedEvent(
+            created,
+            post.AuthorId,
+            post.Content,
+            post.CreatedAt
+        );
+
+        await rabbitMqPublisher.PublishPostCreatedAsync(evt);
         
         return created;
     }

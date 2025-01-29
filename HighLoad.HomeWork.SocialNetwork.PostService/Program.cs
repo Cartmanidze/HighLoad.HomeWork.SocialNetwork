@@ -20,6 +20,7 @@ builder.Services.AddTransient<IFriendService, FriendService>();
 builder.Services.AddTransient<IPostRepository, PostRepository>();
 builder.Services.AddTransient<IPostService, PostService>();
 builder.Services.AddTransient<IFeedCacheService, FeedCacheService>();
+builder.Services.AddTransient<IRabbitMqPublisher, RabbitMqPublisher>();
 
 builder.Services.AddSingleton<IWebsocketConnectionManager, InMemoryWebsocketConnectionManager>();
 
