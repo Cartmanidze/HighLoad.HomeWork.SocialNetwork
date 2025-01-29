@@ -176,6 +176,7 @@ services:
       - k6
     volumes:
       - ./k6-scripts:/scripts
+      - ./k6-results:/results
        
   # БД для PostService
   postdb:
@@ -313,6 +314,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
     networks:
       - backend
+      - k6
     ports:
       - "8100:8080"
     depends_on:

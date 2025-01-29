@@ -23,7 +23,7 @@ export let options = {
 };
 
 // === Константы для урлов ===
-const BASE_URL = 'http://dialog-service:8100';
+const BASE_URL = 'http://dialog-service:8080';
 const LOGIN_URL = 'http://highload.homework.socialnetwork:8080/auth/login';
 const DIALOG_SEND_URL = `${BASE_URL}/dialogs/send`;
 const DIALOG_LIST_URL = `${BASE_URL}/dialogs/list`;
