@@ -208,6 +208,8 @@ services:
     depends_on:
       postdb:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
@@ -216,6 +218,14 @@ services:
       Jwt__Audience: "SocialNetworkUsers"
       Jwt__Key: "aVeryLongAndSecureSecretKeyThatIsAtLeast32Chars"
       ServiceUrls__UserServiceUrl: "http://highload.homework.socialnetwork:8080"
+      RabbitMQ__HostName: "rabbitmq"
+      RabbitMQ__UserName: "rabbitmq"
+      RabbitMQ__Password: "rabbitmq"
+      RabbitMQ__Port: 5672
+      RabbitMQ__ExchangeName: "post-exchange"
+      RabbitMQ__ExchangeType: "topic"
+      RabbitMQ__RoutingKey: "post.created"
+      RabbitMQ__QueueName: "websocket-broadcast"
     networks:
       - backend
     ports:
@@ -311,8 +321,7 @@ services:
         condition: service_healthy
       citus-worker2:
         condition: service_healthy
-        
-        
+                
   rabbitmq:
     image: rabbitmq:3.11-management
     container_name: rabbitmq

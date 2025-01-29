@@ -33,6 +33,7 @@ public class WebsocketBroadcastBackgroundService : BackgroundService, IAsyncDisp
         var factory = new ConnectionFactory
         {
             HostName = _mqOptions.HostName,
+            Port = _mqOptions.Port,
             UserName = _mqOptions.UserName,
             Password = _mqOptions.Password
         };

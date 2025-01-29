@@ -15,11 +15,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-builder.Services.AddScoped<IFriendRepository, FriendRepository>();
-builder.Services.AddScoped<IFriendService, FriendService>();
-builder.Services.AddScoped<IPostRepository, PostRepository>();
-builder.Services.AddScoped<IPostService, PostService>();
-builder.Services.AddScoped<IFeedCacheService, FeedCacheService>();
+builder.Services.AddTransient<IFriendRepository, FriendRepository>();
+builder.Services.AddTransient<IFriendService, FriendService>();
+builder.Services.AddTransient<IPostRepository, PostRepository>();
+builder.Services.AddTransient<IPostService, PostService>();
+builder.Services.AddTransient<IFeedCacheService, FeedCacheService>();
 
 builder.Services.AddSingleton<IWebsocketConnectionManager, InMemoryWebsocketConnectionManager>();
 
