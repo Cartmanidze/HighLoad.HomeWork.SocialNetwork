@@ -20,11 +20,11 @@ if (string.IsNullOrWhiteSpace(redisConnString))
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-//var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
+var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
 
-//builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
+builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
 
-builder.Services.AddSingleton<IDialogService, DialogServiceRedis>();
+//builder.Services.AddSingleton<IDialogService, DialogServiceRedis>();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnString));
 
