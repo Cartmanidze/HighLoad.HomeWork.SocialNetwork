@@ -300,7 +300,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+      
+  redis:
+    image: redis:latest
+    container_name: redis
+    volumes:
+      - ./redis-scripts/redis_functions.lua:/tmp/redis_functions.lua
+    command: >
+      sh -c '
+          redis-server --appendonly no --protected-mode no &
+          sleep 5
+          cat /tmp/redis_functions.lua | redis-cli -x FUNCTION LOAD REPLACE
+          tail -f /dev/null
+        '
+    ports:
+      - "6380:6379"
+    networks:
+      - backend
+  
   # DialogService
   dialog-service:
     build:
@@ -341,11 +358,4 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  redis:
-    image: redis:7.0
-    container_name: redis
-    networks:
-      - backend
-    ports:
-      - "6380:6379"
-
+    
