@@ -1,4 +1,5 @@
 using System.Text;
+using Asp.Versioning;
 using HighLoad.HomeWork.SocialNetwork.Data;
 using HighLoad.HomeWork.SocialNetwork.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.Middlewares;
@@ -13,6 +14,20 @@ using Prometheus;
 var builder = WebApplication.CreateBuilder(args);
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+
+builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new QueryStringApiVersionReader("api-version"),
+        new HeaderApiVersionReader("x-api-version"));
+}).AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 builder.Services.AddControllers();
 
@@ -93,6 +108,8 @@ app.UseMiddleware<ReadOnlyRoutingMiddleware>();
 app.UseHttpMetrics();
 
 app.UseMetricServer();
+
+app.UseMiddleware<RequestIdMiddleware>();
 
 app.UseAuthentication();
 

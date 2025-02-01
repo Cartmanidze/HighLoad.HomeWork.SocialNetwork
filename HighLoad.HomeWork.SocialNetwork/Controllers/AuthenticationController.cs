@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Asp.Versioning;
 using HighLoad.HomeWork.SocialNetwork.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.Models;
 using HighLoad.HomeWork.SocialNetwork.Requests;
@@ -10,7 +11,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace HighLoad.HomeWork.SocialNetwork.Controllers;
 
 [ApiController]
-[Route("auth")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/auth")]
 public class AuthenticationController(
     IConfiguration configuration,
     IUserService userService,

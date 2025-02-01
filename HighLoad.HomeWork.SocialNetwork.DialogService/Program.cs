@@ -1,32 +1,54 @@
-
 using System.Text;
+using HighLoad.HomeWork.SocialNetwork.DialogService.Clients;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
+using HighLoad.HomeWork.SocialNetwork.DialogService.Middlewares;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Metrics;
 using Prometheus;
-using StackExchange.Redis;
+using Refit;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var redisConnString = builder.Configuration.GetConnectionString("Redis");
+builder.Logging.ClearProviders().AddConfiguration(builder.Configuration.GetSection("Logging")).AddConsole().AddDebug();
 
-if (string.IsNullOrWhiteSpace(redisConnString))
-{
-    redisConnString = "localhost:6379";
-}
+// var redisConnString = builder.Configuration.GetConnectionString("Redis");
+//
+// if (string.IsNullOrWhiteSpace(redisConnString))
+// {
+//     redisConnString = "localhost:6379";
+// }
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-//var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
+var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
 
-//builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
+builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
 
-builder.Services.AddSingleton<IDialogService, DialogServiceRedisUdf>();
+// builder.Services.AddSingleton<IDialogService, DialogServiceRedisUdf>();
+//
+// builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnString));
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnString));
+var userServiceUrl = builder.Configuration["ServiceUrls:UserServiceUrl"];
+if (string.IsNullOrEmpty(userServiceUrl))
+{
+    throw new InvalidOperationException("UserServiceUrl is not configured in appsettings.json (ServiceUrls:UserServiceUrl).");
+}
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<AuthHeaderHandler>();
+
+builder.Services.AddRefitClient<IUserClient>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri(userServiceUrl);
+    })
+    .AddHttpMessageHandler<AuthHeaderHandler>();
+
+builder.Services.AddScoped<IUserValidationService, UserValidationService>();
 
 builder.Services.AddControllers();
 
@@ -100,6 +122,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpMetrics();
 
 app.UseMetricServer();
+
+app.UseMiddleware<RequestIdMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using HighLoad.HomeWork.SocialNetwork.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.Models;
 using HighLoad.HomeWork.SocialNetwork.Responses;
@@ -7,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace HighLoad.HomeWork.SocialNetwork.Controllers;
 
 [ApiController]
-[Route("users")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/users")]
 public class UserController(IUserService userService) : ControllerBase
 {
     [Authorize]

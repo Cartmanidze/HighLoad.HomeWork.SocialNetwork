@@ -9,7 +9,7 @@ namespace HighLoad.HomeWork.SocialNetwork.DialogService.Controllers;
 [Authorize]
 [ApiController]
 [Route("dialogs")]
-public class DialogsController(IDialogService dialogService) : ControllerBase
+public class DialogsController(IDialogService dialogService, IUserValidationService userValidationService) : ControllerBase
 {
     [HttpPost("send")]
     public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest? request)
@@ -24,6 +24,13 @@ public class DialogsController(IDialogService dialogService) : ControllerBase
         if (request == null || request.ReceiverId == Guid.Empty || string.IsNullOrWhiteSpace(request.Text))
         {
             return BadRequest("Invalid request body.");
+        }
+
+        var userExists = await userValidationService.UserExistsAsync(request.ReceiverId);
+
+        if (!userExists)
+        {
+            return BadRequest("The user does not exist.");
         }
 
         await dialogService.SaveMessageAsync(request.ReceiverId, userId.Value, request.Text);

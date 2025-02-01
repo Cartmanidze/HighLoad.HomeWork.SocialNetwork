@@ -88,7 +88,7 @@ docker compose down
 
 ## Аутентификация
 
-### POST `/auth/login`
+### POST `/v1/auth/login`
 Позволяет аутентифицировать пользователя. При успешной аутентификации возвращает JWT-токен, который необходимо использовать в заголовке `Authorization: Bearer <token>` при дальнейших запросах.
 
 Пример запроса:
@@ -98,7 +98,7 @@ curl -X POST http://localhost:8080/auth/login \
   -d '{"email":"user@example.com","password":"SuperSecurePassword"}'
 ```
 
-### POST `/auth/register`
+### POST `/v1/auth/register`
 Регистрация нового пользователя. Ожидает данные о пользователе (например, email и пароль) и создаёт запись в базе данных.
 
 Пример запроса:
@@ -117,7 +117,7 @@ curl -X POST http://localhost:8080/auth/register \
 }'
 ```
 
-### POST `/auth/generate-users`
+### POST `/v1/auth/generate-users`
 Генерирует тестовых пользователей. Принимает параметр `count` (целое число), определяющий, сколько пользователей будет сгенерировано.
 
 Параметры:
@@ -130,7 +130,7 @@ curl -X POST "http://localhost:8080/auth/generate-users?count=10"
 
 ## Пользователи
 
-### GET `/users/{id}`
+### GET `/v1/users/{id}`
 Возвращает информацию о пользователе с указанным идентификатором (UUID или иной уникальный идентификатор).
 
 Пример запроса:
@@ -139,7 +139,7 @@ curl -X GET http://localhost:8080/users/000074ac-8a22-450f-a836-d730cd8c2a00 \
   -H "Authorization: Bearer <token>"
 ```
 
-### GET `/users/search`
+### GET `/v1/users/search`
 Позволяет искать пользователей по определённым критериям, например по имени и фамилии.
 
 Пример запроса:
