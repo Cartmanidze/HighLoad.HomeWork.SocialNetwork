@@ -144,8 +144,8 @@ services:
       '
       "
 
-  # Приложение
-  highload.homework.socialnetwork:
+  # Приложение 1 инстанс
+  highload.homework.socialnetwork1:
     build:
       context: .
       dockerfile: HighLoad.HomeWork.SocialNetwork/Dockerfile
@@ -154,20 +154,54 @@ services:
       - master-db
       - slave1-db
       - slave2-db
+      - haproxy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStringsDatabases__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
-      ConnectionStringsDatabases__Slaves__0: "Host=slave1-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
-      ConnectionStringsDatabases__Slaves__1: "Host=slave2-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      ConnectionStringsDatabases__Slaves__0: "Host=haproxy;Port=6432;Database=socialnetwork;Username=postgres;Password=postgres"
       Jwt__Issuer: "SocialNetwork"
       Jwt__Audience: "SocialNetworkUsers"
       Jwt__Key: "aVeryLongAndSecureSecretKeyThatIsAtLeast32Chars"
     networks:
       - backend
       - k6
+
+  # Приложение 2 инстанс
+  highload.homework.socialnetwork2:
+    build:
+      context: .
+      dockerfile: HighLoad.HomeWork.SocialNetwork/Dockerfile
+    image: highload.homework.socialnetwork
+    depends_on:
+      - master-db
+      - slave1-db
+      - slave2-db
+      - haproxy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStringsDatabases__Master: "Host=master-db;Port=5432;Database=socialnetwork;Username=postgres;Password=postgres"
+      ConnectionStringsDatabases__Slaves__0: "Host=haproxy;Port=6432;Database=socialnetwork;Username=postgres;Password=postgres"
+      Jwt__Issuer: "SocialNetwork"
+      Jwt__Audience: "SocialNetworkUsers"
+      Jwt__Key: "aVeryLongAndSecureSecretKeyThatIsAtLeast32Chars"
+    networks:
+      - backend
+      - k6
+  
+  nginx:
+    image: nginx:latest
+    depends_on:
+      - highload.homework.socialnetwork1
+      - highload.homework.socialnetwork2
+    networks:
+      - backend
+      - k6
     ports:
-      - "8080:8080"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
   # K6 для нагрузочного тестирования
   k6:
@@ -359,4 +393,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    
+  
+  haproxy:
+    image: haproxy:latest
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - backend
+    ports:
+      - "6432:6432"

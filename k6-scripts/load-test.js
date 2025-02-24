@@ -19,7 +19,7 @@ export let options = {
     },
 };
 
-const BASE_URL = 'http://highload.homework.socialnetwork:8080';
+const BASE_URL = 'http://nginx:80';
 const LOGIN_URL = `${BASE_URL}/auth/login`;
 const USER_URL = `${BASE_URL}/users/000074ac-8a22-450f-a836-d730cd8c2a00`;
 const SEARCH_URL = `${BASE_URL}/users/search?firstName=Al&lastName=Jo`;
