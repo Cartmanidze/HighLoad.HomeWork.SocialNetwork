@@ -2,5 +2,5 @@ scrape_configs:
   - job_name: 'social_network_app'
     static_configs:
       - targets:
-          - 'highload.homework.socialnetwork:8080'
+          - 'nginx:80'
           - 'dialog-service:8100'
