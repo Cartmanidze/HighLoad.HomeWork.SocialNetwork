@@ -1,8 +1,11 @@
 using System.Text;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Clients;
+using HighLoad.HomeWork.SocialNetwork.DialogService.Events;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Interfaces;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Middlewares;
+using HighLoad.HomeWork.SocialNetwork.DialogService.Options;
 using HighLoad.HomeWork.SocialNetwork.DialogService.Services;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -25,7 +28,56 @@ var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 var citusConnection = builder.Configuration.GetConnectionString("CitusDb")!;
 
-builder.Services.AddSingleton<IDialogService>(_ => new DialogService(citusConnection));
+// Настройка опций RabbitMQ
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+
+// Настройка MassTransit
+var rabbitMqOptions = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>();
+builder.Services.AddMassTransit(config =>
+{
+    config.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host(rabbitMqOptions.Host, rabbitMqOptions.VirtualHost, h =>
+        {
+            h.Username(rabbitMqOptions.Username);
+            h.Password(rabbitMqOptions.Password);
+        });
+        
+        cfg.Message<NewMessageEvent>(x => 
+        {
+            x.SetEntityName("message-events");
+        });
+        
+        cfg.Message<MessageReadEvent>(x => 
+        {
+            x.SetEntityName("message-events"); 
+
+        });
+        
+        // Объявляем точку обмена message-events с типом topic
+        cfg.Publish<NewMessageEvent>(x =>
+        {
+            x.ExchangeType = "topic";
+        });
+        
+        cfg.Publish<MessageReadEvent>(x =>
+        {
+            x.ExchangeType = "topic";
+        });
+    });
+});
+
+// Регистрируем сервис публикации сообщений через MassTransit
+builder.Services.AddScoped<IEventPublisher, MassTransitEventPublisher>();
+
+// Регистрируем сервис для работы с диалогами
+builder.Services.AddScoped<IDialogService>(provider => 
+    new DialogService(
+        citusConnection, 
+        provider.GetRequiredService<IEventPublisher>(),
+        provider.GetRequiredService<ILogger<DialogService>>()
+    )
+);
 
 // builder.Services.AddSingleton<IDialogService, DialogServiceRedisUdf>();
 //

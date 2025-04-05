@@ -351,6 +351,11 @@ services:
       - "6380:6379"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   
   # DialogService
   dialog-service:
@@ -402,3 +407,57 @@ services:
       - backend
     ports:
       - "6432:6432"
+
+  # Counter DB (PostgreSQL for CounterService)
+  counter-db:
+    image: postgres:15
+    container_name: counter-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: counters # Указываем имя базы данных для счетчиков
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - backend
+    ports:
+      - "5439:5432" # Другой порт, чтобы не конфликтовать с другими БД
+    volumes:
+      - ./postgres-data/counters:/var/lib/postgresql/data # Отдельный том для данных
+      - ./initdb-counters:/docker-entrypoint-initdb.d # Том для скриптов инициализации
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "counters" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # CounterService
+  counter-service:
+    build:
+      context: .
+      dockerfile: HighLoad.HomeWork.SocialNetwork.CounterService/Dockerfile
+    container_name: counter-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      # Обновленная строка подключения к новой БД
+      Database__ConnectionString: "Host=counter-db;Port=5432;Database=counters;Username=postgres;Password=postgres"
+      Redis__ConnectionString: "redis:6379"
+      Redis__InstanceName: "Counters_"
+      Redis__DefaultExpirationMinutes: 60
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__Username: "rabbitmq"
+      RabbitMq__Password: "rabbitmq"
+      RabbitMq__VirtualHost: "/"
+    networks:
+      - backend
+      - k6
+    ports:
+      - "8110:8080"
+    depends_on:
+      # Зависимость от новой БД и других сервисов
+      counter-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy # Предполагаем, что redis уже определен выше
+      rabbitmq:
+        condition: service_healthy # Предполагаем, что rabbitmq уже определен выше

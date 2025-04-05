@@ -57,4 +57,44 @@ public class DialogsController(IDialogService dialogService, IUserValidationServ
         
         return Ok(messages);
     }
+    
+    [HttpPost("read/{messageId:guid}")]
+    public async Task<IActionResult> MarkAsRead(Guid messageId)
+    {
+        var userId = User.GetUserId();
+        
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+        
+        if (messageId == Guid.Empty)
+        {
+            return BadRequest("Invalid message ID.");
+        }
+        
+        await dialogService.MarkAsReadAsync(userId.Value, messageId);
+        
+        return Ok(new { status = "Message marked as read" });
+    }
+    
+    [HttpPost("read-batch")]
+    public async Task<IActionResult> MarkMultipleAsRead([FromBody] MarkAsReadRequest request)
+    {
+        var userId = User.GetUserId();
+        
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+        
+        if (request == null || request.MessageIds == null || request.MessageIds.Count == 0)
+        {
+            return BadRequest("No message IDs provided.");
+        }
+        
+        await dialogService.MarkManyAsReadAsync(userId.Value, request.MessageIds);
+        
+        return Ok(new { status = $"{request.MessageIds.Count} messages marked as read" });
+    }
 }

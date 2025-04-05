@@ -11,4 +11,6 @@ public class Message
     public string Text { get; init; } = null!;
     
     public DateTime CreatedAt { get; init; }
+    
+    public bool IsRead { get; init; }
 }
