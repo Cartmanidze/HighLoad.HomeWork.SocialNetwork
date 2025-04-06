@@ -32,6 +32,7 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_BASIC_ENABLED=false
+      - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
 
@@ -461,3 +462,79 @@ services:
         condition: service_healthy # Предполагаем, что redis уже определен выше
       rabbitmq:
         condition: service_healthy # Предполагаем, что rabbitmq уже определен выше
+
+  # Zabbix Server
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:latest
+    container_name: zabbix-server
+    environment:
+      - DB_SERVER_HOST=zabbix-db # Используем отдельную БД для Zabbix
+      - POSTGRES_USER=zabbix
+      - POSTGRES_PASSWORD=zabbix
+      - POSTGRES_DB=zabbix
+    networks:
+      - backend
+    ports:
+      - "10051:10051"
+    depends_on:
+      zabbix-db:
+        condition: service_healthy
+    volumes:
+      - zabbix-server-data:/var/lib/zabbix
+
+  # Zabbix Web UI
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:latest
+    container_name: zabbix-web
+    environment:
+      - DB_SERVER_HOST=zabbix-db
+      - POSTGRES_USER=zabbix
+      - POSTGRES_PASSWORD=zabbix
+      - POSTGRES_DB=zabbix
+      - ZBX_SERVER_HOST=zabbix-server
+    networks:
+      - backend
+    ports:
+      - "8081:8080" # Используем порт 8081, чтобы не конфликтовать
+    depends_on:
+      - zabbix-server
+      - zabbix-db
+
+  # Zabbix Database (PostgreSQL)
+  zabbix-db:
+    image: postgres:15
+    container_name: zabbix-db
+    environment:
+      - POSTGRES_USER=zabbix
+      - POSTGRES_PASSWORD=zabbix
+      - POSTGRES_DB=zabbix
+    networks:
+      - backend
+    volumes:
+      - zabbix-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "zabbix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zabbix Agent (для DialogService)
+  zabbix-agent-dialog:
+    image: zabbix/zabbix-agent:latest
+    container_name: zabbix-agent-dialog
+    environment:
+      - ZBX_SERVER_HOST=zabbix-server
+      - ZBX_HOSTNAME=dialog-service-container # Имя хоста в Zabbix
+    networks:
+      - backend # Должен быть в той же сети, что и DialogService
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Для мониторинга Docker
+    pid: host # Для доступа к процессам хоста (опционально)
+    privileged: true # Для доступа к системным метрикам
+    depends_on:
+      - zabbix-server
+      - dialog-service # Зависит от сервиса, который мониторим
+
+volumes:
+  zabbix-server-data:
+  zabbix-db-data:

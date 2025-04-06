@@ -1,6 +1,11 @@
+global:
+  scrape_interval: 15s
+
 scrape_configs:
-  - job_name: 'social_network_app'
+  - job_name: 'k6'
     static_configs:
-      - targets:
-          - 'nginx:80'
-          - 'dialog-service:8100'
+      - targets: ['k6:6565']
+      
+  - job_name: 'dialog-service'
+    static_configs:
+      - targets: ['dialog-service:8080']

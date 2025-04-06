@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using OpenTelemetry.Metrics;
 using Prometheus;
 using Refit;
+using OpenTelemetry.Exporter;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -181,5 +182,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();
